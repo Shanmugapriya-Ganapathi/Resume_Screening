@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+{% block content %}
+{% if mode == 'single' %}
+<div class="mb-4">
+	<div class="d-flex flex-justify-between flex-items-center mb-2">
+		<h1 class="section-title mb-0">
+			<i class="fas fa-file-alt"></i> Resume Analysis Results
+		</h1>
+		<a href="/" class="btn btn-outline">
+			<i class="fas fa-arrow-left"></i> Back to Home
+		</a>
+	</div>
+</div>
+
+<div class="d-flex flex-column flex-lg-row gap-4">
+	<div class="flex-1 min-width-0">
+		<div class="Box">
+			<div class="Box-header">
+				<h3 class="Box-title mb-0">
+					<i class="fas fa-file-text"></i> Extracted Text Preview
+				</h3>
+			</div>
+			<div class="Box-body">
+				<pre class="p-3 color-bg-subtle" style="white-space: pre-wrap; max-height: 450px; overflow:auto; border-radius: 6px;">{{ (raw_text[:5000] ~ ('...' if raw_text|length > 5000 else '')) }}</pre>
+				{% if raw_text|length > 5000 %}
+				<div class="mt-2 color-fg-muted">
+					<small><i class="fas fa-info-circle"></i> Showing first 5,000 characters. Full text contains {{ raw_text|length }} characters.</small>
+				</div>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+	<div class="flex-1 min-width-0" style="max-width:450px;">
+		<div class="Box mb-3">
+			<div class="Box-body">
+				<div class="d-flex flex-justify-between flex-items-center">
+					<div>
+						<h6 class="m-0 f5 color-fg-muted mb-1">
+							<i class="fas fa-file"></i> File Name
+						</h6>
+						<span class="Label Label--primary" style="font-size: 0.875rem;">{{ filename }}</span>
+					</div>
+					<div class="stat-card" style="min-width: 80px;">
+						<div class="stat-value" style="font-size: 1.5rem;">{{ keywords|length }}</div>
+						<div class="stat-label">Keywords</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="Box mb-3">
+			<div class="Box-header">
+				<h3 class="Box-title mb-0">
+					<i class="fas fa-key"></i> Top Keywords
+				</h3>
+			</div>
+			<div class="Box-body">
+				{% if keywords %}
+				<div class="d-flex flex-wrap gap-2">
+					{% for kw in keywords %}
+					<span class="Label Label--primary">{{ kw }}</span>
+					{% endfor %}
+				</div>
+				{% else %}
+				<div class="color-fg-muted">
+					<i class="fas fa-info-circle"></i> No keywords extracted.
+				</div>
+				{% endif %}
+			</div>
+		</div>
+		<div class="Box">
+			<div class="Box-header">
+				<h3 class="Box-title mb-0">
+					<i class="fas fa-chart-bar"></i> Keyword Frequency
+				</h3>
+			</div>
+			<div class="Box-body">
+				<div id="kw_chart" style="min-height: 300px;"></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="d-flex flex-column flex-lg-row gap-4 mt-4">
+	<div class="flex-1 min-width-0">
+		<div class="Box">
+			<div class="Box-header">
+				<h3 class="Box-title mb-0">
+					<i class="fas fa-tools"></i> Detected Skills
+				</h3>
+			</div>
+			<div class="Box-body">
+				{% if skills %}
+				<div class="d-flex flex-wrap gap-2">
+					{% for s in skills %}
+					<span class="badge-skill">
+						<i class="fas fa-check-circle"></i> {{ s }}
+					</span>
+					{% endfor %}
+				</div>
+				<div class="mt-3">
+					<strong>Total Skills Found:</strong> <span class="Label Label--success">{{ skills|length }}</span>
+				</div>
+				{% else %}
+				<div class="color-fg-muted">
+					<i class="fas fa-exclamation-circle"></i> No predefined skills detected in this resume.
+				</div>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+	<div class="flex-1 min-width-0">
+		<div class="Box">
+			<div class="Box-header">
+				<h3 class="Box-title mb-0">
+					<i class="fas fa-address-card"></i> Contact Information & Entities
+				</h3>
+			</div>
+			<div class="Box-body">
+				{% if contact and (contact.email or contact.phone or contact.linkedin or contact.github) %}
+				<div class="mb-3">
+					<h6 class="mb-2"><i class="fas fa-envelope"></i> Contact Details</h6>
+					{% if contact.email %}
+					<div class="mb-2">
+						<strong>Email:</strong> 
+						{% for email in contact.email %}
+						<a href="mailto:{{ email }}" class="Label Label--info">{{ email }}</a>
+						{% endfor %}
+					</div>
+					{% endif %}
+					{% if contact.phone %}
+					<div class="mb-2">
+						<strong>Phone:</strong> 
+						{% for phone in contact.phone %}
+						<span class="Label">{{ phone }}</span>
+						{% endfor %}
+					</div>
+					{% endif %}
+					{% if contact.linkedin %}
+					<div class="mb-2">
+						<strong>LinkedIn:</strong> 
+						{% for li in contact.linkedin %}
+						<a href="https://{{ li }}" target="_blank" class="Label Label--info">
+							<i class="fab fa-linkedin"></i> {{ li }}
+						</a>
+						{% endfor %}
+					</div>
+					{% endif %}
+					{% if contact.github %}
+					<div class="mb-2">
+						<strong>GitHub:</strong> 
+						{% for gh in contact.github %}
+						<a href="https://{{ gh }}" target="_blank" class="Label Label--info">
+							<i class="fab fa-github"></i> {{ gh }}
+						</a>
+						{% endfor %}
+					</div>
+					{% endif %}
+				</div>
+				{% else %}
+				<div class="color-fg-muted mb-3">
+					<i class="fas fa-info-circle"></i> No contact information found.
+				</div>
+				{% endif %}
+				{% if entities %}
+				<hr class="my-3" />
+				<div>
+					<h6 class="mb-2"><i class="fas fa-tags"></i> Named Entities</h6>
+					{% for label, values in entities.items() %}
+					<div class="mb-2">
+						<span class="Label Label--accent mr-2">{{ label }}</span> 
+						{% for val in values[:8] %}
+						<span class="Label mr-1">{{ val }}</span>
+						{% endfor %}
+						{% if values|length > 8 %}
+						<span class="color-fg-muted">+{{ values|length - 8 }} more</span>
+						{% endif %}
+					</div>
+					{% endfor %}
+				</div>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+	const kwData = {{ keyword_freq | tojson }};
+	const x = kwData.map(d => d.keyword);
+	const y = kwData.map(d => d.count);
+	
+	const colors = y.map(count => {
+		const maxCount = Math.max(...y);
+		const intensity = count / maxCount;
+		return `rgba(9, 105, 218, ${0.3 + intensity * 0.7})`;
+	});
+	
+	Plotly.newPlot('kw_chart', [{
+		x: x,
+		y: y,
+		type: 'bar',
+		marker: {
+			color: colors,
+			line: { color: '#0969da', width: 1 }
+		},
+		text: y,
+		textposition: 'outside'
+	}], {
+		margin: { t: 20, r: 20, b: 60, l: 50 },
+		xaxis: { 
+			title: 'Keywords',
+			tickangle: -45
+		},
+		yaxis: { 
+			title: 'Frequency',
+			gridcolor: '#e1e4e8'
+		},
+		plot_bgcolor: 'rgba(0,0,0,0)',
+		paper_bgcolor: 'rgba(0,0,0,0)'
+	}, {responsive: true});
+</script>
+
+{% else %}
+<div class="mb-4">
+	<div class="d-flex flex-justify-between flex-items-center mb-2">
+		<h1 class="section-title mb-0">
+			<i class="fas fa-list-ol"></i> Batch Processing Results
+		</h1>
+		<a href="/" class="btn btn-outline">
+			<i class="fas fa-arrow-left"></i> Back to Home
+		</a>
+	</div>
+	<p class="color-fg-muted">Resumes ranked by similarity to the job description (higher is better).</p>
+</div>
+
+{% if ranked %}
+<div class="d-flex flex-wrap gap-3 mb-4">
+	<div class="stat-card flex-1" style="min-width: 150px;">
+		<div class="stat-value">{{ ranked|length }}</div>
+		<div class="stat-label">
+			<i class="fas fa-file-alt"></i> Total Resumes
+		</div>
+	</div>
+	<div class="stat-card flex-1" style="min-width: 150px;">
+		<div class="stat-value" style="color: #1a7f37;">
+			{{ "%.1f"|format((ranked[0].similarity_score * 100) if ranked else 0) }}%
+		</div>
+		<div class="stat-label">
+			<i class="fas fa-trophy"></i> Best Match
+		</div>
+	</div>
+	<div class="stat-card flex-1" style="min-width: 150px;">
+		<div class="stat-value" style="color: #656d76;">
+			{{ "%.1f"|format((ranked|sum(attribute='similarity_score') / ranked|length * 100) if ranked else 0) }}%
+		</div>
+		<div class="stat-label">
+			<i class="fas fa-chart-line"></i> Average Score
+		</div>
+	</div>
+</div>
+
+<div class="Box mb-4">
+	<div class="Box-header">
+		<h3 class="Box-title mb-0">
+			<i class="fas fa-chart-bar"></i> Similarity Scores Overview
+		</h3>
+	</div>
+	<div class="Box-body">
+		<div id="scores_chart" style="min-height: 400px;"></div>
+	</div>
+</div>
+
+<div class="Box">
+	<div class="Box-header">
+		<h3 class="Box-title mb-0">
+			<i class="fas fa-list"></i> Detailed Results (Ranked)
+		</h3>
+	</div>
+	<div class="Box-body">
+		{% for item in ranked %}
+		<div class="border color-border-muted rounded-2 p-4 mb-3 color-bg-default" style="transition: all 0.2s;">
+			<div class="d-flex flex-justify-between flex-items-center mb-3">
+				<div class="d-flex flex-items-center gap-3">
+					<div class="stat-card" style="min-width: 60px; padding: 8px;">
+						<div class="stat-value" style="font-size: 1.5rem; color: #656d76;">#{{ loop.index }}</div>
+					</div>
+					<div>
+						<h5 class="m-0 mb-1">
+							<i class="fas fa-file-pdf"></i> {{ item.filename }}
+						</h5>
+						<small class="color-fg-muted">
+							<i class="fas fa-info-circle"></i> {{ item.raw_text|length }} characters extracted
+						</small>
+					</div>
+				</div>
+				<div>
+					{% set score_pct = item.similarity_score * 100 %}
+					{% if score_pct >= 70 %}
+						{% set score_class = 'score-excellent' %}
+					{% elif score_pct >= 50 %}
+						{% set score_class = 'score-good' %}
+					{% elif score_pct >= 30 %}
+						{% set score_class = 'score-fair' %}
+					{% else %}
+						{% set score_class = 'score-poor' %}
+					{% endif %}
+					<span class="score-badge {{ score_class }}">
+						<i class="fas fa-percentage"></i> {{ "%.1f"|format(score_pct) }}%
+					</span>
+				</div>
+			</div>
+			
+			<div class="mb-3">
+				<strong><i class="fas fa-key"></i> Top Keywords:</strong>
+				<div class="mt-2 d-flex flex-wrap gap-2">
+					{% for kw in item.keywords[:15] %}
+					<span class="Label Label--primary">{{ kw }}</span>
+					{% endfor %}
+					{% if item.keywords|length > 15 %}
+					<span class="color-fg-muted">+{{ item.keywords|length - 15 }} more</span>
+					{% endif %}
+				</div>
+			</div>
+			
+			<div class="mb-3">
+				<strong><i class="fas fa-tools"></i> Skills:</strong>
+				{% if item.skills %}
+				<div class="mt-2 d-flex flex-wrap gap-2">
+					{% for skill in item.skills %}
+					<span class="badge-skill">
+						<i class="fas fa-check-circle"></i> {{ skill }}
+					</span>
+					{% endfor %}
+				</div>
+				{% else %}
+				<span class="color-fg-muted ml-2">No predefined skills detected</span>
+				{% endif %}
+			</div>
+			
+			{% if item.contact and (item.contact.email or item.contact.phone or item.contact.linkedin or item.contact.github) %}
+			<div class="mb-3">
+				<strong><i class="fas fa-address-card"></i> Contact Information:</strong>
+				<div class="mt-2">
+					{% if item.contact.email %}
+					<span class="mr-3">
+						<strong>Email:</strong> 
+						{% for email in item.contact.email[:2] %}
+						<a href="mailto:{{ email }}" class="Label Label--info">{{ email }}</a>
+						{% endfor %}
+					</span>
+					{% endif %}
+					{% if item.contact.phone %}
+					<span class="mr-3">
+						<strong>Phone:</strong> 
+						{% for phone in item.contact.phone[:2] %}
+						<span class="Label">{{ phone }}</span>
+						{% endfor %}
+					</span>
+					{% endif %}
+					{% if item.contact.linkedin %}
+					<span class="mr-3">
+						<strong>LinkedIn:</strong> 
+						<a href="https://{{ item.contact.linkedin[0] }}" target="_blank" class="Label Label--info">
+							<i class="fab fa-linkedin"></i> View Profile
+						</a>
+					</span>
+					{% endif %}
+					{% if item.contact.github %}
+					<span>
+						<strong>GitHub:</strong> 
+						<a href="https://{{ item.contact.github[0] }}" target="_blank" class="Label Label--info">
+							<i class="fab fa-github"></i> View Profile
+						</a>
+					</span>
+					{% endif %}
+				</div>
+			</div>
+			{% endif %}
+			
+			<div class="mt-3">
+				<strong><i class="fas fa-eye"></i> Text Preview:</strong>
+				<pre class="mt-2 color-bg-subtle p-3" style="white-space: pre-wrap; max-height: 200px; overflow:auto; border-radius: 6px; font-size: 0.875rem;">{{ (item.raw_text[:600] ~ ('...' if item.raw_text|length > 600 else '')) }}</pre>
+			</div>
+		</div>
+		{% endfor %}
+	</div>
+</div>
+
+<script>
+	const ranked = {{ ranked | tojson }};
+	const xr = ranked.map(r => r.filename.length > 20 ? r.filename.substring(0, 20) + '...' : r.filename);
+	const yr = ranked.map(r => r.similarity_score * 100);
+	
+	const barColors = yr.map(score => {
+		if (score >= 70) return '#1a7f37';
+		if (score >= 50) return '#1a8837';
+		if (score >= 30) return '#9a6700';
+		return '#cf222e';
+	});
+	
+	Plotly.newPlot('scores_chart', [{
+		x: xr,
+		y: yr,
+		type: 'bar',
+		marker: {
+			color: barColors,
+			line: { color: '#ffffff', width: 1 }
+		},
+		text: yr.map(s => s.toFixed(1) + '%'),
+		textposition: 'outside'
+	}], {
+		margin: { t: 30, r: 20, b: 80, l: 60 },
+		xaxis: { 
+			title: 'Resume Files',
+			tickangle: -45,
+			gridcolor: '#e1e4e8'
+		},
+		yaxis: { 
+			title: 'Similarity Score (%)',
+			gridcolor: '#e1e4e8',
+			range: [0, 100]
+		},
+		plot_bgcolor: 'rgba(0,0,0,0)',
+		paper_bgcolor: 'rgba(0,0,0,0)',
+		title: {
+			text: 'Resume Match Scores',
+			font: { size: 16 }
+		}
+	}, {responsive: true});
+</script>
+{% else %}
+<div class="Box">
+	<div class="Box-body text-center py-5">
+		<i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #d1242f; margin-bottom: 1rem;"></i>
+		<h3>No Results Found</h3>
+		<p class="color-fg-muted">No resumes were successfully processed. Please check your folder path and try again.</p>
+		<a href="/" class="btn btn-primary mt-3">
+			<i class="fas fa-arrow-left"></i> Go Back
+		</a>
+	</div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
